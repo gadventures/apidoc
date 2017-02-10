@@ -1,0 +1,6 @@
+*.swp
+\#*\#
+*~
+coverage.out
+glide.lock
+vendor
