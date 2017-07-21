@@ -182,7 +182,12 @@ func jsonMarshalString(w *bufio.Writer, s string) error {
 		case backSlash:
 			w.WriteString(`\\`)
 		default:
-			w.WriteRune(runeValue)
+			//if rune value is less than `space` 0x20 then per ASCII/UTF8 table
+			//it is a control character that has no business being in json
+			//so discard it
+			if runeValue >= ' ' {
+				w.WriteRune(runeValue)
+			}
 		}
 	}
 	w.WriteRune(jsonQuote)
