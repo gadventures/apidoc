@@ -152,7 +152,7 @@ func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
 	return err
 }
 
-//decode here
+// decode here
 
 func decodeSerType(r io.Reader) (serDataType, error) {
 	buf := make([]byte, 1)
@@ -161,8 +161,8 @@ func decodeSerType(r io.Reader) (serDataType, error) {
 		if err != nil {
 			return serDInvalid, err
 		}
-		//not len of bytes just recursively call outselfs
-		//should be safe tail recursion
+		// not len of bytes just recursively call outselfs
+		// should be safe tail recursion
 		return decodeSerType(r)
 	}
 	return serDataType(buf[0]), nil
@@ -270,7 +270,7 @@ func decodeBool(r io.Reader) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		//efficient tail recursive call in case data was not ready
+		// efficient tail recursive call in case data was not ready
 		return decodeBool(r)
 	}
 	if uint8(raw[0]) == 1 {

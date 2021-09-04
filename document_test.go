@@ -26,7 +26,7 @@ func TestDocumentEqual(t *testing.T) {
 	doc2["d"] = doc3
 	doc1["d"] = doc3
 	assert(t, doc1.Equal(doc2), "doc1 == doc2")
-	//doc4
+	// doc4
 	doc4 := make(Document)
 	doc4["a"] = "Adam"
 	doc4["b"] = "Basil"
@@ -40,7 +40,7 @@ func TestDocumentEqual(t *testing.T) {
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2")
 	doc2["d"] = doc3
 	assert(t, doc1.Equal(doc2), "doc1 == doc2")
-	//floats
+	// floats
 	doc5 := make(Document)
 	doc6 := make(Document)
 	doc5["foo"] = float64(5.4)
@@ -50,7 +50,7 @@ func TestDocumentEqual(t *testing.T) {
 	doc6["foo"] = float64(5.41)
 	assert(t, !doc5.Equal(doc6), "doc5 != doc6")
 	assert(t, !doc6.Equal(doc5), "doc5 != doc6")
-	//invalids int have no place there
+	// invalids int have no place there
 	doc5["foo"] = float64(5)
 	doc6["foo"] = float64(5)
 	assert(t, doc5.Equal(doc6), "doc5 == doc6")
@@ -80,20 +80,20 @@ func TestDocumentEqualWithNils(t *testing.T) {
 	doc2["h"] = "Hm"
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
-	//from doc2 point of view
+	// from doc2 point of view
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	doc2["h"] = "Hi"
 	assert(t, doc2.Equal(doc1), "doc2 == doc1 fail")
 	assert(t, doc1.Equal(doc2), "doc2 == doc1 fail")
-	//ok now add one extra attrib to doc2
+	// ok now add one extra attrib to doc2
 	doc2["extra"] = "extra"
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
 }
 
 func TestDocumentEqualSlices(t *testing.T) {
-	//test the slices of Document
+	// test the slices of Document
 	makeDocument := func() Document {
 		doc := make(Document)
 		doc["h"] = "Hi"
@@ -110,18 +110,18 @@ func TestDocumentEqualSlices(t *testing.T) {
 	doc2 := makeDocument()
 	assert(t, doc1.Equal(doc2), "doc1 == doc2 fail")
 	assert(t, doc2.Equal(doc1), "doc1 == doc2 fail")
-	//now mess with doc2 slice some
+	// now mess with doc2 slice some
 	fd := make(Document)
 	fd["foo"] = "bar"
-	//ensure fd equivalent to what the doc holds
+	// ensure fd equivalent to what the doc holds
 	mslcif, prs := doc2["s"]
 	assert(t, prs, "key presence fail")
 	mslc, tpok := mslcif.([]interface{})
 	assert(t, tpok, "cast fail")
-	//validate
+	// validate
 	assert(t, mslc[0].(Document).Equal(fd), "doc == map fail")
 	assert(t, fd.Equal(mslc[0].(Document)), "doc == map fail")
-	//do new slice of maps
+	// do new slice of maps
 	nslc := make([]interface{}, 10)
 	for i := 0; i < len(nslc); i++ {
 		nslc[i] = fd
@@ -129,20 +129,20 @@ func TestDocumentEqualSlices(t *testing.T) {
 	doc2["s"] = nslc
 	assert(t, doc1.Equal(doc2), "doc1 == doc2 fail")
 	assert(t, doc2.Equal(doc1), "doc1 == doc2 fail")
-	//diff sizes check
+	// diff sizes check
 	doc2["s"] = nslc[:3]
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
-	//reset
+	// reset
 	doc2["s"] = nslc
 	assert(t, doc1.Equal(doc2), "doc1 == doc2 fail")
 	assert(t, doc2.Equal(doc1), "doc1 == doc2 fail")
-	//change a value check
+	// change a value check
 	nslc[3] = false
 	doc2["s"] = nslc
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
-	//nil slice
+	// nil slice
 	doc2["s"] = nil
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
 	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
@@ -173,7 +173,7 @@ func TestDocumentETags(t *testing.T) {
 	doc["kame"] = "foo"
 	doc["name"] = "foo"
 	doc["embed"] = *(doc.Copy())
-	//plain diff
+	// plain diff
 	tag, err := doc.ETag()
 	ok(t, err)
 	assert(t, uint64(tag) > 0, "tag more than zero")
@@ -183,7 +183,7 @@ func TestDocumentETags(t *testing.T) {
 	assert(t, !equalsTag(tag, doc2), "doc2 should be diff")
 	doc2["name"] = "foo"
 	assert(t, equalsTag(tag, doc2), "should equal")
-	//since we are using json to compute the hash this also confirm repeatability on both json and by extension binary encodings (as BinaryMarshaller uses json internaly as well)
+	// since we are using json to compute the hash this also confirm repeatability on both json and by extension binary encodings (as BinaryMarshaller uses json internaly as well)
 	for i := 0; i < 10000; i++ {
 		doc3 := *(doc.Copy())
 		doc3["foo"] = "bar"
@@ -241,5 +241,5 @@ func TestDocumentBinary(t *testing.T) {
 	doctag, err = doc.ETag()
 	ok(t, err)
 	equals(t, doctag, tag)
-	//should be good
+	// should be good
 }

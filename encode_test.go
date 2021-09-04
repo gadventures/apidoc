@@ -20,10 +20,12 @@ func sampleDoc() Document {
 	doc["notoriety"] = 5.0
 	doc["useful"] = nil
 	doc["friends"] = []interface{}{
-		"Joe Strong", "Tim Bleak", "Judith Believable"}
+		"Joe Strong", "Tim Bleak", "Judith Believable",
+	}
 	doc["matrix"] = []interface{}{
 		[]interface{}{5.0, 4.9, 8.7},
-		[]interface{}{9.0, 11.3, 15.88, 7.11}}
+		[]interface{}{9.0, 11.3, 15.88, 7.11},
+	}
 	return doc
 }
 
@@ -62,8 +64,8 @@ func TestEncodeDecode(t *testing.T) {
 	}
 }
 
-//to run benchmarks
-//go test -v -bench Benchmark -run Benchmark -count 3
+// to run benchmarks
+// go test -v -bench Benchmark -run Benchmark -count 3
 
 func BenchmarkEncodeBinary(b *testing.B) {
 	buf := new(bytes.Buffer)
@@ -94,7 +96,7 @@ func BenchmarkDecodeBinary(b *testing.B) {
 		b.Error(err)
 	}
 	data := buf.Bytes()
-	//reset timer
+	// reset timer
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err = decodeValue(bytes.NewReader(data))
@@ -110,7 +112,7 @@ func BenchmarkDecodeJson(b *testing.B) {
 	if err != nil {
 		b.Error(err)
 	}
-	//reset timer
+	// reset timer
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		doc := make(Document)

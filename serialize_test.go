@@ -14,7 +14,7 @@ func TestEmptyList(t *testing.T) {
 		t.Errorf("Expected empty list")
 	}
 
-	//more types for fun
+	// more types for fun
 	doc["intnum"] = 6.0
 	doc["floatnum"] = 6.5
 	doc["txt"] = `bam"bam`
@@ -24,7 +24,7 @@ func TestEmptyList(t *testing.T) {
 		t.Error(err)
 	}
 
-	//test json encoding
+	// test json encoding
 	obtained := string(data)
 	expected := `{"floatnum":6.500000,"intnum":6,"party":[],"txt":"bam\"bam"}`
 	if obtained != expected {

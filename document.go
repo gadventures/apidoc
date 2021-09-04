@@ -94,11 +94,11 @@ func (d Document) Equal(other Document) bool {
 		}
 		return true
 	}
-	//basic len check
+	// basic len check
 	if len(d) != len(other) {
 		return false
 	}
-	//main comparison loop sort keys first
+	// main comparison loop sort keys first
 	var sortedKeys []string
 	for k := range d {
 		sortedKeys = append(sortedKeys, k)
@@ -126,7 +126,7 @@ func (d *Document) Copy() *Document {
 	copyValue := func(v interface{}) interface{} {
 		switch vv := v.(type) {
 		case Document:
-			return *vv.Copy() //there should never be nil so this should be ok
+			return *vv.Copy() // there should never be nil so this should be ok
 		case []interface{}:
 			return copySlice(vv)
 		default:
@@ -151,22 +151,22 @@ func (d *Document) Copy() *Document {
 // for every node in Document tree
 type TraverseFunc func(*Document, string, interface{})
 
-//TraverseCall will visit every node in Document tree
-//and call provided f on each node
+// TraverseCall will visit every node in Document tree
+// and call provided f on each node
 func (d Document) TraverseCall(f TraverseFunc) {
-	//ok main loop
+	// ok main loop
 	for k, v := range d {
 		switch vv := v.(type) {
 		case Document:
 			vv.TraverseCall(f)
 		case []interface{}:
-			//traverse documents if they were inside the slice
+			// traverse documents if they were inside the slice
 			for _, vvv := range vv {
 				if vvvv, isDoc := vvv.(Document); isDoc {
 					vvvv.TraverseCall(f)
 				}
 			}
-			//call this anyway for mixed slices or slices of non Document
+			// call this anyway for mixed slices or slices of non Document
 			f(&d, k, vv)
 		default:
 			f(&d, k, vv)
@@ -178,7 +178,7 @@ type serializationType uint32
 
 const (
 	serInvalid serializationType = iota
-	serBinary                    //this is the snappy encoded version
+	serBinary                    // this is the snappy encoded version
 )
 
 // UnmarshalBinary implements binary decoding
@@ -204,7 +204,7 @@ func (d *Document) UnmarshalBinary(data []byte) error {
 		*d = doc
 		return nil
 	default:
-		//must be legacy json then
+		// must be legacy json then
 	}
 	if crc32.ChecksumIEEE(remdata) != oldcrc {
 		return errors.New("checksum does not match - unmarshalling")
@@ -229,14 +229,14 @@ func (d Document) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-//ETag is type for storing the calculated etag/checksum of Document
+// ETag is type for storing the calculated etag/checksum of Document
 type ETag uint64
 
 func (e ETag) String() string {
 	return fmt.Sprintf("%x", uint64(e))
 }
 
-//NewETag returns new ETag initialized with provided hexadecimal string
+// NewETag returns new ETag initialized with provided hexadecimal string
 func NewETag(s string) (ETag, error) {
 	var e uint64
 	if _, err := fmt.Sscanf(s, "%x", &e); err != nil {
@@ -245,14 +245,14 @@ func NewETag(s string) (ETag, error) {
 	return ETag(e), nil
 }
 
-//ETag returns the checksum of the document
+// ETag returns the checksum of the document
 func (d Document) ETag() (ETag, error) {
 	h := fnv.New64a()
 	err := encodeDocument(h, d, true)
 	return ETag(h.Sum64()), err
 }
 
-//ErrGAPI type represents error message as returned by GAPI
+// ErrGAPI type represents error message as returned by GAPI
 type ErrGAPI struct {
 	URI            string
 	HTTPStatusCode int
@@ -285,8 +285,8 @@ func (d Document) GAPIError(uri string) *ErrGAPI {
 	return nil
 }
 
-//GetPath recursively searches for value at provided path
-//e.g. GetPath("staff_profiles", "id") would return attribute id in
+// GetPath recursively searches for value at provided path
+// e.g. GetPath("staff_profiles", "id") would return attribute id in
 // /staff_profiles/id
 func (d Document) GetPath(parts ...string) (interface{}, bool) {
 	switch len(parts) {
@@ -296,8 +296,8 @@ func (d Document) GetPath(parts ...string) (interface{}, bool) {
 		v, prs := d[parts[0]]
 		return v, prs
 	}
-	//ok there is more parts
-	//for now only follow path of docs of docs (no lists)
+	// ok there is more parts
+	// for now only follow path of docs of docs (no lists)
 	nextDoc, castOK := d[parts[0]].(Document)
 	if !castOK {
 		return "", false

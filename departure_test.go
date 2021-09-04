@@ -34,7 +34,7 @@ func TestDepartureBlob(t *testing.T) {
 		t.Errorf("The two documents string must equal")
 	}
 
-	//get path check
+	// get path check
 	val, ok := doc.GetPath("start_address", "country", "name")
 	if !ok {
 		t.Errorf("Expected to found the country name")
@@ -44,7 +44,7 @@ func TestDepartureBlob(t *testing.T) {
 		t.Errorf("Expected %s but got %s", expected, val)
 	}
 
-	//count attribs
+	// count attribs
 	var attribCount, attribCount2 int
 	doc.TraverseCall(getCountAttribs(&attribCount))
 	delete(doc, "truth")
@@ -56,9 +56,7 @@ func TestDepartureBlob(t *testing.T) {
 }
 
 func TestDepartureAdditional(t *testing.T) {
-	var (
-		doc, doc2 Document
-	)
+	var doc, doc2 Document
 	err := json.NewDecoder(bytes.NewBufferString(departureBlob)).Decode(&doc)
 	if err != nil {
 		t.Error(err)
@@ -68,13 +66,13 @@ func TestDepartureAdditional(t *testing.T) {
 		t.Errorf("The two documents must equal")
 	}
 
-	//nil error
+	// nil error
 	gErr := doc2.GAPIError(doc2["href"].(string))
 	if gErr != nil {
 		t.Errorf("document should not be an GAPIError")
 	}
 
-	//real error
+	// real error
 	err = json.NewDecoder(bytes.NewBufferString(errorBlob)).Decode(&doc2)
 	if err != nil {
 		t.Error(err)
@@ -88,7 +86,6 @@ func TestDepartureAdditional(t *testing.T) {
 	if !strings.Contains(gErr.Error(), "404") {
 		t.Errorf("Expected 404 but got %s", gErr.Error())
 	}
-
 }
 
 func getCountAttribs(count *int) TraverseFunc {

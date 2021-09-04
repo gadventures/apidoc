@@ -10,10 +10,10 @@ import (
 	"sort"
 )
 
-//UnmarshalJSON implements json unmarshalling of Document
+// UnmarshalJSON implements json unmarshalling of Document
 func (d *Document) UnmarshalJSON(data []byte) error {
-	//we need to be in charge of unmarshalling to retain some sanity
-	//everything we fetch will be json object -- i guess if wrong error will be thrown right away
+	// we need to be in charge of unmarshalling to retain some sanity
+	// everything we fetch will be json object -- i guess if wrong error will be thrown right away
 	var root map[string]interface{}
 	if err := json.Unmarshal(data, &root); err != nil {
 		return err
@@ -77,7 +77,7 @@ func (d *Document) UnmarshalJSON(data []byte) error {
 		}
 		return d, nil
 	}
-	//ok do the root
+	// ok do the root
 	rd, rerr := unpackObject(root)
 	if rerr == nil {
 		*d = rd
@@ -182,9 +182,9 @@ func jsonMarshalString(w *bufio.Writer, s string) error {
 		case backSlash:
 			w.WriteString(`\\`)
 		default:
-			//if rune value is less than `space` 0x20 then per ASCII/UTF8 table
-			//it is a control character that has no business being in json
-			//so discard it
+			// if rune value is less than `space` 0x20 then per ASCII/UTF8 table
+			// it is a control character that has no business being in json
+			// so discard it
 			if runeValue >= ' ' {
 				w.WriteRune(runeValue)
 			}
@@ -196,10 +196,10 @@ func jsonMarshalString(w *bufio.Writer, s string) error {
 
 func jsonMarshalFloat64(w *bufio.Writer, n float64) error {
 	if math.Ceil(n) == n {
-		//integer
+		// integer
 		fmt.Fprintf(w, "%.f", n)
 	} else {
-		//float
+		// float
 		fmt.Fprintf(w, "%f", n)
 	}
 	return nil
