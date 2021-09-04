@@ -2,49 +2,81 @@ package apidoc
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
-	"sort"
 )
 
-type serDataType uint8
+type serializeDataType uint8
 
 const (
-	serDInvalid serDataType = iota
-	serDString
-	serDBool
-	serDFloat64
-	serDListStart
-	serDListEnd
-	serDDocumentStart
-	serDDocumentEnd
-	serDNil
+	sdtInvalid serializeDataType = iota
+	sdtString
+	sdtBool
+	sdtFloat64
+	sdtListStart
+	sdtListEnd
+	sdtDocumentStart
+	sdtDocumentEnd
+	sdtNil
 )
 
-func encodeSerType(w io.Writer, typ serDataType) error {
-	var ary [1]byte
-	ary[0] = byte(typ)
+func (s serializeDataType) String() string {
+	switch s {
+	case sdtString:
+		return "String"
+	case sdtBool:
+		return "Bool"
+	case sdtFloat64:
+		return "Float64"
+	case sdtListStart:
+		return "ListStart"
+	case sdtListEnd:
+		return "ListEnd"
+	case sdtDocumentStart:
+		return "DocumentStart"
+	case sdtDocumentEnd:
+		return "DocumentEnd"
+	case sdtNil:
+		return "Nil"
+	default:
+		panic(fmt.Sprintf("unrecongnized serializeDataType %d %T %#v", s, s, s))
+	}
+}
+
+func encodeSDT(w io.Writer, t serializeDataType) error {
+	var ary [1]byte = [1]byte{byte(t)}
 	if l, err := w.Write(ary[:]); l != 1 {
 		if err != nil {
 			return err
 		}
-		return errors.New("encodeSerType fail")
+		return fmt.Errorf("encodeSDT fail for %s", t)
 	}
 	return nil
 }
 
+func encodeBool(w io.Writer, b bool) error {
+	var v uint8
+	if b {
+		v = 1
+	}
+	_, err := w.Write([]byte{byte(sdtBool), byte(v)})
+	return err
+}
+
 func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
-	if err := encodeSerType(w, serDDocumentStart); err != nil {
+	err := encodeSDT(w, sdtDocumentStart)
+	if err != nil {
 		return err
 	}
-	keys := make([]string, 0, len(doc))
-	for k := range doc {
-		keys = append(keys, k)
-	}
+	
+	// extract Document keys
+	var keys []string
 	if sortKeys {
-		sort.Strings(keys)
+		keys = doc.KeysSorted()
+	} else {
+	    keys = doc.Keys()
 	}
+
 	for _, key := range keys {
 		err := encodeString(w, key)
 		if err != nil {
@@ -67,22 +99,68 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 				err = encodeList(w, val, sortKeys)
 			default:
 				return fmt.Errorf(
-					"Key %s has unexpected type %T for value %v",
-					key, val, val)
+					"key %s has unexpected type %T for value %v",
+					key, val, val,
+				)
 			}
 		}
 		if err != nil {
 			return err
 		}
 	}
-	if err := encodeSerType(w, serDDocumentEnd); err != nil {
+	return encodeSDT(w, sdtDocumentEnd)
+}
+
+func encodeFloat64(w io.Writer, num float64) error {
+	err := encodeSDT(w, sdtFloat64)
+	if err != nil {
 		return err
 	}
-	return nil
+	return binary.Write(w, binary.LittleEndian, num)
+}
+
+func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
+	err := encodeSDT(w, sdtListStart)
+	if err != nil {
+		return err
+	}
+
+	for idx, val := range list {
+		// special case nil
+		if val == nil {
+			return encodeNil(w)
+		}
+		// handled types
+		switch val := val.(type) {
+		case bool:
+			err = encodeBool(w, val)
+		case float64:
+			err = encodeFloat64(w, val)
+		case string:
+			err = encodeString(w, val)
+		case Document:
+			err = encodeDocument(w, val, sortKeys)
+		case []interface{}:
+			err = encodeList(w, val, sortKeys)
+		default:
+			return fmt.Errorf(
+				"item at index %d has unexpected type %T for value %v",
+				idx, val, val,
+			)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return encodeSDT(w, sdtListEnd)
+}
+
+func encodeNil(w io.Writer) error {
+	return encodeSDT(w, sdtNil)
 }
 
 func encodeString(w io.Writer, str string) error {
-	err := encodeSerType(w, serDString)
+	err := encodeSDT(w, sdtString)
 	if err != nil {
 		return err
 	}
@@ -95,97 +173,40 @@ func encodeString(w io.Writer, str string) error {
 	return err
 }
 
-func encodeNil(w io.Writer) error {
-	return encodeSerType(w, serDNil)
-}
-
-func encodeFloat64(w io.Writer, num float64) error {
-	err := encodeSerType(w, serDFloat64)
-	if err != nil {
-		return err
-	}
-	err = binary.Write(w, binary.LittleEndian, num)
-	return err
-}
-
-func encodeBool(w io.Writer, b bool) error {
-	var v uint8
-	if b {
-		v = 1
-	}
-	_, err := w.Write([]byte{byte(serDBool), byte(v)})
-	return err
-}
-
-func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
-	err := encodeSerType(w, serDListStart)
-	if err != nil {
-		return err
-	}
-
-	for idx, val := range list {
-		if val == nil {
-			err = encodeNil(w)
-		} else {
-			switch val := val.(type) {
-			case string:
-				err = encodeString(w, val)
-			case float64:
-				err = encodeFloat64(w, val)
-			case bool:
-				err = encodeBool(w, val)
-			case Document:
-				err = encodeDocument(w, val, sortKeys)
-			case []interface{}:
-				err = encodeList(w, val, sortKeys)
-			default:
-				return fmt.Errorf(
-					"Item at index %d has unexpected type %T for value %v",
-					idx, val, val)
-			}
-		}
-		if err != nil {
-			return err
-		}
-	}
-	err = encodeSerType(w, serDListEnd)
-	return err
-}
-
 // decode here
 
-func decodeSerType(r io.Reader) (serDataType, error) {
+func decodeSDT(r io.Reader) (serializeDataType, error) {
 	buf := make([]byte, 1)
 	l, err := r.Read(buf)
 	if l != len(buf) {
 		if err != nil {
-			return serDInvalid, err
+			return sdtInvalid, err
 		}
 		// not len of bytes just recursively call outselfs
 		// should be safe tail recursion
-		return decodeSerType(r)
+		return decodeSDT(r)
 	}
-	return serDataType(buf[0]), nil
+	return serializeDataType(buf[0]), nil
 }
 
-func nextItem(r io.Reader) (serDataType, interface{}, error) {
+func nextItem(r io.Reader) (serializeDataType, interface{}, error) {
 	var val interface{}
-	typ, err := decodeSerType(r)
+	typ, err := decodeSDT(r)
 	if err != nil {
 		return typ, nil, err
 	}
 	switch typ {
-	case serDDocumentStart:
-	case serDDocumentEnd:
-	case serDString:
+	case sdtDocumentStart:
+	case sdtDocumentEnd:
+	case sdtString:
 		val, err = decodeString(r)
-	case serDBool:
+	case sdtBool:
 		val, err = decodeBool(r)
-	case serDFloat64:
+	case sdtFloat64:
 		val, err = decodeFloat64(r)
-	case serDListStart:
-	case serDListEnd:
-	case serDNil:
+	case sdtListStart:
+	case sdtListEnd:
+	case sdtNil:
 		return typ, nil, nil
 	default:
 		err = fmt.Errorf(
@@ -204,9 +225,9 @@ Loop:
 			return doc, err
 		}
 		switch typ {
-		case serDDocumentEnd:
+		case sdtDocumentEnd:
 			break Loop
-		case serDString:
+		case sdtString:
 			key := val.(string)
 			value, err := decodeValue(r)
 			if err != nil {
@@ -228,14 +249,14 @@ func decodeValue(r io.Reader) (interface{}, error) {
 		return nil, err
 	}
 	switch typ {
-	case serDDocumentStart:
+	case sdtDocumentStart:
 		val, err = decodeDocument(r)
-	case serDListStart:
+	case sdtListStart:
 		val, err = decodeList(r)
-	case serDString:
-	case serDBool:
-	case serDFloat64:
-	case serDNil:
+	case sdtString:
+	case sdtBool:
+	case sdtFloat64:
+	case sdtNil:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf(
@@ -297,16 +318,16 @@ Loop:
 			return lst, err
 		}
 		switch typ {
-		case serDListEnd:
+		case sdtListEnd:
 			break Loop
-		case serDDocumentStart:
-			val, err = decodeDocument(r)
-		case serDListStart:
-			val, err = decodeList(r)
-		case serDString:
-		case serDBool:
-		case serDFloat64:
-		case serDNil:
+		case sdtDocumentStart:
+			val, _ = decodeDocument(r)
+		case sdtListStart:
+			val, _ = decodeList(r)
+		case sdtString:
+		case sdtBool:
+		case sdtFloat64:
+		case sdtNil:
 		default:
 			return lst, fmt.Errorf(
 				"top level decoding not supported for type %v",

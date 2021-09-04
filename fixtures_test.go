@@ -1,7 +1,6 @@
 package apidoc
 
-var departureBlob = `
-{
+var departureBlob = `{
   "id": "733048",
   "href": "https://rest.gadventures.com/departures/733048",
   "date_created": "2016-05-09T14:53:24Z",
@@ -396,8 +395,12 @@ var departureBlob = `
   "components": {
     "href": "https://rest.gadventures.com/departures/733048/departure_components"
   }
-}
-`
+}`
 
-var errorBlob = `{"message": "No such departures with ID 7330489",
- "errors": [], "time": "2017-02-10T17:30:11", "http_status_code": 404}`
+var errorBlob = `{
+  "http_status_code": 404
+  "time": "2017-02-10T17:30:11",
+  "message": "No such departures with ID 7330489",
+  "errors": [],
+  "error_id": "gapi_8cef0f3ad5e54ad2bab20493b896ef9f"
+}`

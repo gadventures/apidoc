@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"sort"
 )
 
-// UnmarshalJSON implements json unmarshalling of Document
+// UnmarshalJSON implements json unmarshaling of Document
 func (d *Document) UnmarshalJSON(data []byte) error {
-	// we need to be in charge of unmarshalling to retain some sanity
+	// we need to be in charge of unmarshaling to retain some sanity
 	// everything we fetch will be json object -- i guess if wrong error will be thrown right away
 	var root map[string]interface{}
 	if err := json.Unmarshal(data, &root); err != nil {
@@ -85,9 +84,9 @@ func (d *Document) UnmarshalJSON(data []byte) error {
 	return rerr
 }
 
-// MarshalJSON implements json marshalling of Document
+// MarshalJSON implements json marshaling of Document
 func (d Document) MarshalJSON() ([]byte, error) {
-	// we need to be in charge of marshalling as well because
+	// we need to be in charge of marshaling as well because
 	// go marshalls nil slices to null
 	// where we want []
 	var buf bytes.Buffer
@@ -103,34 +102,41 @@ func (d Document) WriteOutJSON(w io.Writer) error {
 }
 
 func jsonMarshalDocument(w *bufio.Writer, doc Document, flush bool) error {
-	/*
-		Supported values:
-		bool, for JSON booleans
-		float64, for JSON numbers
-		string, for JSON strings
-		[]interface{}, for JSON arrays
-		map[string]interface{}, for JSON objects
-		nil for JSON null
-	*/
+	// Supported values
+	//
+	// bool                    for JSON booleans
+	// float64                 for JSON numbers
+	// string                  for JSON strings
+	// []interface{}           for JSON arrays
+	// map[string]interface{}  for JSON objects
+	// nil                     for JSON null
+
+	// optionally flush the writer
 	if flush {
 		defer w.Flush()
 	}
 
-	keys := make([]string, 0, len(doc))
-	for k := range doc {
-		keys = append(keys, k)
+	// start serializing the document
+	_, err := w.WriteRune('{')
+	if err != nil {
+		return err
 	}
-	sort.Strings(keys)
-	w.WriteRune('{')
-	for idx, key := range keys {
+
+	for idx, key := range doc.KeysSorted() {
+		// next JSON key/value
 		if idx > 0 {
-			w.WriteRune(',')
+			_, err = w.WriteRune(',')
+			if err != nil {
+				return err
+			}
 		}
-		err := jsonMarshalString(w, key)
+		// write the key
+		err = jsonMarshalString(w, key)
 		if err != nil {
 			return err
 		}
 		w.WriteRune(':')
+		// write the value
 		val := doc[key]
 		switch val := val.(type) {
 		case string:
@@ -154,8 +160,8 @@ func jsonMarshalDocument(w *bufio.Writer, doc Document, flush bool) error {
 			return err
 		}
 	}
-	w.WriteRune('}')
-	return nil
+	_, err = w.WriteRune('}')
+	return err
 }
 
 const (
@@ -164,34 +170,40 @@ const (
 )
 
 func jsonMarshalString(w *bufio.Writer, s string) error {
-	w.WriteRune(jsonQuote)
+	_, err := w.WriteRune(jsonQuote)
+	if err != nil {
+		return err
+	}
 	for _, runeValue := range s {
 		switch runeValue {
 		case '\b':
-			w.WriteString(`\b`)
+			_, err = w.WriteString(`\b`)
 		case '\n':
-			w.WriteString(`\n`)
+			_, err = w.WriteString(`\n`)
 		case '\f':
-			w.WriteString(`\f`)
+			_, err = w.WriteString(`\f`)
 		case '\r':
-			w.WriteString(`\r`)
+			_, err = w.WriteString(`\r`)
 		case '\t':
-			w.WriteString(`\t`)
+			_, err = w.WriteString(`\t`)
 		case jsonQuote:
-			w.WriteString(`\"`)
+			_, err = w.WriteString(`\"`)
 		case backSlash:
-			w.WriteString(`\\`)
+			_, err = w.WriteString(`\\`)
 		default:
 			// if rune value is less than `space` 0x20 then per ASCII/UTF8 table
 			// it is a control character that has no business being in json
 			// so discard it
 			if runeValue >= ' ' {
-				w.WriteRune(runeValue)
+				_, err = w.WriteRune(runeValue)
 			}
 		}
+		if err != nil {
+			return err
+		}
 	}
-	w.WriteRune(jsonQuote)
-	return nil
+	_, err = w.WriteRune(jsonQuote)
+	return err
 }
 
 func jsonMarshalFloat64(w *bufio.Writer, n float64) error {
@@ -206,12 +218,14 @@ func jsonMarshalFloat64(w *bufio.Writer, n float64) error {
 }
 
 func jsonMarshalBool(w *bufio.Writer, b bool) error {
-	if b {
-		w.WriteString("true")
-	} else {
-		w.WriteString("false")
+	var err error
+	switch b {
+	case true:
+		_, err = w.WriteString("true")
+	case false:
+		_, err = w.WriteString("false")
 	}
-	return nil
+	return err
 }
 
 func jsonMarshalList(w *bufio.Writer, list []interface{}) error {
