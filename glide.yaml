@@ -1,3 +1,0 @@
-package: github.com/gadventures/apidoc
-import:
-- package: github.com/golang/snappy
