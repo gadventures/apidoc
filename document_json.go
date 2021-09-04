@@ -147,7 +147,7 @@ func jsonMarshalDocument(w *bufio.Writer, doc Document, flush bool) error {
 			err = jsonMarshalNil(w)
 		default:
 			return fmt.Errorf(
-				"Key %s has unexpected type %T for value %v",
+				"key %s has unexpected type %T for value %v",
 				key, val, val)
 		}
 		if err != nil {
@@ -236,7 +236,7 @@ func jsonMarshalList(w *bufio.Writer, list []interface{}) error {
 			err = jsonMarshalNil(w)
 		default:
 			return fmt.Errorf(
-				"Item at index %d has unexpected type %T for value %v",
+				"item at index %d has unexpected type %T for value %v",
 				idx, val, val)
 		}
 

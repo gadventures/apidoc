@@ -10,8 +10,8 @@ func TestDocumentEqual(t *testing.T) {
 	doc3 := make(Document)
 	doc1["a"] = "Adam"
 	doc1["b"] = "Boris"
-	doc2["b"] = "Boris"
 	doc2["a"] = "Adam"
+	doc2["b"] = "Boris"
 	doc3["a"] = "Adam"
 	doc3["b"] = "Basil"
 	equals(t, 2, len(doc1))
@@ -67,11 +67,12 @@ func TestDocumentEqualWithNils(t *testing.T) {
 		doc["b"] = nil
 		doc["c"] = nil
 		doc["d"] = nil
+		doc["e"] = nil
 		doc["f"] = nil
 		doc["g"] = nil
 		doc["h"] = "Hi"
-		doc["h1"] = float64(4.5)
-		doc["h2"] = true
+		doc["x1"] = float64(4.5)
+		doc["x2"] = true
 		return doc
 	}
 	doc1 := makeDocument()
@@ -145,7 +146,7 @@ func TestDocumentEqualSlices(t *testing.T) {
 	// nil slice
 	doc2["s"] = nil
 	assert(t, !doc1.Equal(doc2), "doc1 != doc2 fail")
-	assert(t, !doc2.Equal(doc1), "doc1 != doc2 fail")
+	assert(t, !doc2.Equal(doc1), "doc2 != doc1 fail")
 }
 
 func TestDocumentETags(t *testing.T) {

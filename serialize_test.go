@@ -18,6 +18,7 @@ func TestEmptyList(t *testing.T) {
 	doc["intnum"] = 6.0
 	doc["floatnum"] = 6.5
 	doc["txt"] = `bam"bam`
+	doc["nil"] = nil
 
 	data, err := json.Marshal(&doc)
 	if err != nil {
@@ -26,7 +27,7 @@ func TestEmptyList(t *testing.T) {
 
 	// test json encoding
 	obtained := string(data)
-	expected := `{"floatnum":6.500000,"intnum":6,"party":[],"txt":"bam\"bam"}`
+	expected := `{"floatnum":6.500000,"intnum":6,"nil":null,"party":[],"txt":"bam\"bam"}`
 	if obtained != expected {
 		t.Errorf("Expected %s but got %s", expected, obtained)
 	}
