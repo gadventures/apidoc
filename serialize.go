@@ -39,7 +39,7 @@ func (s serializeDataType) String() string {
 	case sdtNil:
 		return "Nil"
 	default:
-		panic(fmt.Sprintf("unrecongnized serializeDataType %d %T %#v", s, s, s))
+		panic(fmt.Sprintf("unrecognized serializeDataType %d %T %#v", s, s, s))
 	}
 }
 
@@ -68,13 +68,13 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 	if err != nil {
 		return err
 	}
-	
-	// extract Document keys
+
+	// extract the Document keys
 	var keys []string
 	if sortKeys {
 		keys = doc.KeysSorted()
 	} else {
-	    keys = doc.Keys()
+		keys = doc.Keys()
 	}
 
 	for _, key := range keys {
