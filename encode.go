@@ -6,50 +6,56 @@ import (
 	"io"
 )
 
-type serializeDataType uint8
+type encodeType uint8
 
 const (
-	sdtInvalid serializeDataType = iota
-	sdtString
-	sdtBool
-	sdtFloat64
-	sdtListStart
-	sdtListEnd
-	sdtDocumentStart
-	sdtDocumentEnd
-	sdtNil
+	encodeTypeInvalid encodeType = iota
+	encodeTypeString
+	encodeTypeBool
+	encodeTypeFloat64
+	encodeTypeListStart
+	encodeTypeListEnd
+	encodeTypeDocumentStart
+	encodeTypeDocumentEnd
+	encodeTypeNil
 )
 
-func (s serializeDataType) String() string {
-	switch s {
-	case sdtString:
+// Ary return the ary byte value of the encodeType
+func (e encodeType) Ary() []byte {
+	ary := [1]byte{byte(e)}
+	return ary[:]
+}
+
+// String representation of encodeType
+func (e encodeType) String() string {
+	switch e {
+	case encodeTypeString:
 		return "String"
-	case sdtBool:
+	case encodeTypeBool:
 		return "Bool"
-	case sdtFloat64:
+	case encodeTypeFloat64:
 		return "Float64"
-	case sdtListStart:
+	case encodeTypeListStart:
 		return "ListStart"
-	case sdtListEnd:
+	case encodeTypeListEnd:
 		return "ListEnd"
-	case sdtDocumentStart:
+	case encodeTypeDocumentStart:
 		return "DocumentStart"
-	case sdtDocumentEnd:
+	case encodeTypeDocumentEnd:
 		return "DocumentEnd"
-	case sdtNil:
+	case encodeTypeNil:
 		return "Nil"
 	default:
-		panic(fmt.Sprintf("unrecognized serializeDataType %d %T %#v", s, s, s))
+		panic(fmt.Sprintf("unrecognized encodeType %d %T %#v", e, e, e))
 	}
 }
 
-func encodeSDT(w io.Writer, t serializeDataType) error {
-	var ary [1]byte = [1]byte{byte(t)}
-	if l, err := w.Write(ary[:]); l != 1 {
+func encodeEDT(w io.Writer, e encodeType) error {
+	if l, err := w.Write(e.Ary()); l != 1 {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("encodeSDT fail for %s", t)
+		return fmt.Errorf("encodeEDT fail for %s", e)
 	}
 	return nil
 }
@@ -59,12 +65,12 @@ func encodeBool(w io.Writer, b bool) error {
 	if b {
 		v = 1
 	}
-	_, err := w.Write([]byte{byte(sdtBool), byte(v)})
+	_, err := w.Write([]byte{byte(encodeTypeBool), byte(v)})
 	return err
 }
 
 func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
-	err := encodeSDT(w, sdtDocumentStart)
+	err := encodeEDT(w, encodeTypeDocumentStart)
 	if err != nil {
 		return err
 	}
@@ -108,11 +114,11 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 			return err
 		}
 	}
-	return encodeSDT(w, sdtDocumentEnd)
+	return encodeEDT(w, encodeTypeDocumentEnd)
 }
 
 func encodeFloat64(w io.Writer, num float64) error {
-	err := encodeSDT(w, sdtFloat64)
+	err := encodeEDT(w, encodeTypeFloat64)
 	if err != nil {
 		return err
 	}
@@ -120,7 +126,7 @@ func encodeFloat64(w io.Writer, num float64) error {
 }
 
 func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
-	err := encodeSDT(w, sdtListStart)
+	err := encodeEDT(w, encodeTypeListStart)
 	if err != nil {
 		return err
 	}
@@ -152,15 +158,15 @@ func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
 			return err
 		}
 	}
-	return encodeSDT(w, sdtListEnd)
+	return encodeEDT(w, encodeTypeListEnd)
 }
 
 func encodeNil(w io.Writer) error {
-	return encodeSDT(w, sdtNil)
+	return encodeEDT(w, encodeTypeNil)
 }
 
 func encodeString(w io.Writer, str string) error {
-	err := encodeSDT(w, sdtString)
+	err := encodeEDT(w, encodeTypeString)
 	if err != nil {
 		return err
 	}
@@ -175,43 +181,43 @@ func encodeString(w io.Writer, str string) error {
 
 // decode here
 
-func decodeSDT(r io.Reader) (serializeDataType, error) {
+func decodeEDT(r io.Reader) (encodeType, error) {
 	buf := make([]byte, 1)
 	l, err := r.Read(buf)
 	if l != len(buf) {
 		if err != nil {
-			return sdtInvalid, err
+			return encodeTypeInvalid, err
 		}
-		// not len of bytes just recursively call outselfs
-		// should be safe tail recursion
-		return decodeSDT(r)
+		// NOTE: len of bytes just recursively calls ourself
+		//       should be safe tail recursion
+		return decodeEDT(r)
 	}
-	return serializeDataType(buf[0]), nil
+	return encodeType(buf[0]), nil
 }
 
-func nextItem(r io.Reader) (serializeDataType, interface{}, error) {
+func nextItem(r io.Reader) (encodeType, interface{}, error) {
 	var val interface{}
-	typ, err := decodeSDT(r)
+
+	typ, err := decodeEDT(r)
 	if err != nil {
 		return typ, nil, err
 	}
+
 	switch typ {
-	case sdtDocumentStart:
-	case sdtDocumentEnd:
-	case sdtString:
+	case encodeTypeDocumentStart:
+	case encodeTypeDocumentEnd:
+	case encodeTypeString:
 		val, err = decodeString(r)
-	case sdtBool:
+	case encodeTypeBool:
 		val, err = decodeBool(r)
-	case sdtFloat64:
+	case encodeTypeFloat64:
 		val, err = decodeFloat64(r)
-	case sdtListStart:
-	case sdtListEnd:
-	case sdtNil:
+	case encodeTypeListStart:
+	case encodeTypeListEnd:
+	case encodeTypeNil:
 		return typ, nil, nil
 	default:
-		err = fmt.Errorf(
-			"decoding not supported for type %v",
-			typ)
+		err = fmt.Errorf("decoding not supported for type %v", typ)
 	}
 	return typ, val, err
 }
@@ -225,9 +231,9 @@ Loop:
 			return doc, err
 		}
 		switch typ {
-		case sdtDocumentEnd:
+		case encodeTypeDocumentEnd:
 			break Loop
-		case sdtString:
+		case encodeTypeString:
 			key := val.(string)
 			value, err := decodeValue(r)
 			if err != nil {
@@ -249,14 +255,14 @@ func decodeValue(r io.Reader) (interface{}, error) {
 		return nil, err
 	}
 	switch typ {
-	case sdtDocumentStart:
+	case encodeTypeDocumentStart:
 		val, err = decodeDocument(r)
-	case sdtListStart:
+	case encodeTypeListStart:
 		val, err = decodeList(r)
-	case sdtString:
-	case sdtBool:
-	case sdtFloat64:
-	case sdtNil:
+	case encodeTypeString:
+	case encodeTypeBool:
+	case encodeTypeFloat64:
+	case encodeTypeNil:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf(
@@ -318,16 +324,16 @@ Loop:
 			return lst, err
 		}
 		switch typ {
-		case sdtListEnd:
+		case encodeTypeListEnd:
 			break Loop
-		case sdtDocumentStart:
+		case encodeTypeDocumentStart:
 			val, _ = decodeDocument(r)
-		case sdtListStart:
+		case encodeTypeListStart:
 			val, _ = decodeList(r)
-		case sdtString:
-		case sdtBool:
-		case sdtFloat64:
-		case sdtNil:
+		case encodeTypeString:
+		case encodeTypeBool:
+		case encodeTypeFloat64:
+		case encodeTypeNil:
 		default:
 			return lst, fmt.Errorf(
 				"top level decoding not supported for type %v",
