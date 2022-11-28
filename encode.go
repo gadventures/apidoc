@@ -50,7 +50,7 @@ func (e encodeType) String() string {
 	}
 }
 
-func encodeEDT(w io.Writer, e encodeType) error {
+func encodeEncodeType(w io.Writer, e encodeType) error {
 	if l, err := w.Write(e.Ary()); l != 1 {
 		if err != nil {
 			return err
@@ -70,7 +70,7 @@ func encodeBool(w io.Writer, b bool) error {
 }
 
 func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
-	err := encodeEDT(w, encodeTypeDocumentStart)
+	err := encodeEncodeType(w, encodeTypeDocumentStart)
 	if err != nil {
 		return err
 	}
@@ -114,11 +114,11 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 			return err
 		}
 	}
-	return encodeEDT(w, encodeTypeDocumentEnd)
+	return encodeEncodeType(w, encodeTypeDocumentEnd)
 }
 
 func encodeFloat64(w io.Writer, num float64) error {
-	err := encodeEDT(w, encodeTypeFloat64)
+	err := encodeEncodeType(w, encodeTypeFloat64)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func encodeFloat64(w io.Writer, num float64) error {
 }
 
 func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
-	err := encodeEDT(w, encodeTypeListStart)
+	err := encodeEncodeType(w, encodeTypeListStart)
 	if err != nil {
 		return err
 	}
@@ -158,15 +158,15 @@ func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
 			return err
 		}
 	}
-	return encodeEDT(w, encodeTypeListEnd)
+	return encodeEncodeType(w, encodeTypeListEnd)
 }
 
 func encodeNil(w io.Writer) error {
-	return encodeEDT(w, encodeTypeNil)
+	return encodeEncodeType(w, encodeTypeNil)
 }
 
 func encodeString(w io.Writer, str string) error {
-	err := encodeEDT(w, encodeTypeString)
+	err := encodeEncodeType(w, encodeTypeString)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func encodeString(w io.Writer, str string) error {
 
 // decode here
 
-func decodeEDT(r io.Reader) (encodeType, error) {
+func decodeEncodeType(r io.Reader) (encodeType, error) {
 	buf := make([]byte, 1)
 	l, err := r.Read(buf)
 	if l != len(buf) {
@@ -190,7 +190,7 @@ func decodeEDT(r io.Reader) (encodeType, error) {
 		}
 		// NOTE: len of bytes just recursively calls ourself
 		//       should be safe tail recursion
-		return decodeEDT(r)
+		return decodeEncodeType(r)
 	}
 	return encodeType(buf[0]), nil
 }
@@ -198,7 +198,7 @@ func decodeEDT(r io.Reader) (encodeType, error) {
 func nextItem(r io.Reader) (encodeType, interface{}, error) {
 	var val interface{}
 
-	typ, err := decodeEDT(r)
+	typ, err := decodeEncodeType(r)
 	if err != nil {
 		return typ, nil, err
 	}
