@@ -125,7 +125,7 @@ func (d *Document) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	err := binary.Read(buf, binary.LittleEndian, &oldcrc)
 	if err != nil {
-		return fmt.Errorf("binary.Read of checksum failed: unmarshaling: %v", err)
+		return fmt.Errorf("binary.Read of checksum failed: unmarshaling: %w", err)
 	}
 	remdata := buf.Bytes()
 	switch serializationType(oldcrc) {
