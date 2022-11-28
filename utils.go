@@ -25,12 +25,12 @@ func copyValue(v interface{}) interface{} {
 
 // equality utils
 
-func docEqual(k string, d Document, o interface{}) bool {
+func documentEquals(k string, d Document, o interface{}) bool {
 	doc, ok := o.(Document)
 	return ok && d.Equal(doc)
 }
 
-func sliceEqual(k string, s []interface{}, o interface{}) bool {
+func sliceEquals(k string, s []interface{}, o interface{}) bool {
 	slc, ok := o.([]interface{})
 	if !ok {
 		return false
@@ -39,7 +39,7 @@ func sliceEqual(k string, s []interface{}, o interface{}) bool {
 		return false
 	}
 	for i := range s {
-		if valEqual(k, s[i], slc[i]) {
+		if valueEquals(k, s[i], slc[i]) {
 			continue
 		}
 		return false
@@ -47,14 +47,14 @@ func sliceEqual(k string, s []interface{}, o interface{}) bool {
 	return true
 }
 
-func valEqual(k string, v, o interface{}) bool {
+func valueEquals(k string, v, o interface{}) bool {
 	switch t := v.(type) {
 	case bool, float64, string:
 		return reflect.DeepEqual(t, o)
 	case Document:
-		return docEqual(k, t, o)
+		return documentEquals(k, t, o)
 	case []interface{}:
-		return sliceEqual(k, t, o)
+		return sliceEquals(k, t, o)
 	case nil:
 		return o == nil
 	default:

@@ -67,7 +67,7 @@ func (d Document) Equal(other Document) bool {
 		if !ok {
 			return false
 		}
-		if !valEqual(k, v, o) {
+		if !valueEquals(k, v, o) {
 			return false
 		}
 	}
