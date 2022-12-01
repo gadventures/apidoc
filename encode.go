@@ -20,10 +20,11 @@ const (
 	encodeTypeNil
 )
 
-// Ary return the ary byte value of the encodeType
-func (e encodeType) Ary() []byte {
-	ary := [1]byte{byte(e)}
-	return ary[:]
+// ByteValue return the byte value of the encodeType
+func (e encodeType) ByteValue() []byte {
+	// we use [1]byte to ensure that the value is encoded onto a single byte
+	byteVal := [1]byte{byte(e)}
+	return byteVal[:]
 }
 
 // String representation of encodeType
@@ -51,7 +52,7 @@ func (e encodeType) String() string {
 }
 
 func encodeEncodeType(w io.Writer, e encodeType) error {
-	if l, err := w.Write(e.Ary()); l != 1 {
+	if l, err := w.Write(e.ByteValue()); l != 1 {
 		if err != nil {
 			return err
 		}
