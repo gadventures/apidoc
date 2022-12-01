@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"reflect"
 	"sort"
 
 	"github.com/golang/snappy"
@@ -56,22 +57,7 @@ func (d Document) String() string {
 
 // Equal compares if two Documents are the same
 func (d Document) Equal(other Document) bool {
-	// basic len check
-	if len(d) != len(other) {
-		return false
-	}
-	// main comparison loop sort keys first
-	for _, k := range d.KeysSorted() {
-		v := d[k]
-		o, ok := other[k]
-		if !ok {
-			return false
-		}
-		if !valueEquals(k, v, o) {
-			return false
-		}
-	}
-	return true
+	return reflect.DeepEqual(d, other)
 }
 
 // Copy creates a new copy of document
