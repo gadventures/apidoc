@@ -71,12 +71,11 @@ func encodeBool(w io.Writer, b bool) error {
 }
 
 func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
-	err := encodeEncodeType(w, encodeTypeDocumentStart)
-	if err != nil {
+	if err := encodeEncodeType(w, encodeTypeDocumentStart); err != nil {
 		return err
 	}
 
-	// extract the Document keys
+	// extract the Document keys and sort them if necessary
 	var keys []string
 	if sortKeys {
 		keys = doc.KeysSorted()
@@ -89,6 +88,7 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 		if err != nil {
 			return err
 		}
+
 		val := doc[key]
 		if val == nil {
 			err = encodeNil(w)
@@ -119,19 +119,18 @@ func encodeDocument(w io.Writer, doc Document, sortKeys bool) error {
 }
 
 func encodeFloat64(w io.Writer, num float64) error {
-	err := encodeEncodeType(w, encodeTypeFloat64)
-	if err != nil {
+	if err := encodeEncodeType(w, encodeTypeFloat64); err != nil {
 		return err
 	}
 	return binary.Write(w, binary.LittleEndian, num)
 }
 
 func encodeList(w io.Writer, list []interface{}, sortKeys bool) error {
-	err := encodeEncodeType(w, encodeTypeListStart)
-	if err != nil {
+	if err := encodeEncodeType(w, encodeTypeListStart); err != nil {
 		return err
 	}
 
+	var err error
 	for idx, val := range list {
 		// special case nil
 		if val == nil {
@@ -166,17 +165,16 @@ func encodeNil(w io.Writer) error {
 	return encodeEncodeType(w, encodeTypeNil)
 }
 
-func encodeString(w io.Writer, str string) error {
-	err := encodeEncodeType(w, encodeTypeString)
-	if err != nil {
+func encodeString(w io.Writer, s string) error {
+	if err := encodeEncodeType(w, encodeTypeString); err != nil {
 		return err
 	}
-	data := []byte(str)
-	err = binary.Write(w, binary.LittleEndian, int64(len(data)))
-	if err != nil {
+
+	data := []byte(s)
+	if err := binary.Write(w, binary.LittleEndian, int64(len(data))); err != nil {
 		return err
 	}
-	_, err = w.Write(data)
+	_, err := w.Write(data)
 	return err
 }
 
@@ -317,30 +315,33 @@ func decodeFloat64(r io.Reader) (float64, error) {
 }
 
 func decodeList(r io.Reader) ([]interface{}, error) {
-	var lst []interface{}
-Loop:
+	var list []interface{}
+
 	for {
-		typ, val, err := nextItem(r)
+		encType, item, err := nextItem(r)
 		if err != nil {
-			return lst, err
+			return nil, err
 		}
-		switch typ {
+		// check the encodeType and act accordingly
+		switch encType {
 		case encodeTypeListEnd:
-			break Loop
+			return list, nil
 		case encodeTypeDocumentStart:
-			val, _ = decodeDocument(r)
+			item, err = decodeDocument(r)
 		case encodeTypeListStart:
-			val, _ = decodeList(r)
+			item, err = decodeList(r)
 		case encodeTypeString:
 		case encodeTypeBool:
 		case encodeTypeFloat64:
 		case encodeTypeNil:
 		default:
-			return lst, fmt.Errorf(
-				"top level decoding not supported for type %v",
-				typ)
+			return nil, fmt.Errorf("top level decoding not supported for type %v", encType)
 		}
-		lst = append(lst, val)
+		// return early if we encountered an error while recursively decoding
+		if err != nil {
+			return nil, err
+		}
+		// append the item and continue
+		list = append(list, item)
 	}
-	return lst, nil
 }
