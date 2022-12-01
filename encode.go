@@ -47,7 +47,7 @@ func (e encodeType) String() string {
 	case encodeTypeNil:
 		return "Nil"
 	default:
-		panic(fmt.Sprintf("unrecognized encodeType %d %T %#v", e, e, e))
+		return fmt.Sprintf("Unknown(%d)", e)
 	}
 }
 

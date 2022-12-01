@@ -50,7 +50,7 @@ func (d Document) KeysSorted() []string {
 func (d Document) String() string {
 	data, err := json.MarshalIndent(d, "", "  ")
 	if err != nil {
-		panic(err)
+		return fmt.Sprintf("%#v", d)
 	}
 	return string(data)
 }
@@ -185,8 +185,15 @@ func (d Document) GAPIError(uri string) *ErrGAPI {
 
 // GetPath recursively searches for value at provided path
 //
-// e.g. GetPath("staff_profiles", "id") would return attribute id in
-// /staff_profiles/id
+// e.g. GetPath("staff_profile", "id") would return "value" under the
+//
+//	    '/staff_profile/id' path in the Document:
+//
+//	{
+//	  "staff_profile": {
+//	    "id": "value"
+//	  }
+//	}
 func (d Document) GetPath(parts ...string) (interface{}, bool) {
 	switch len(parts) {
 	case 0:
