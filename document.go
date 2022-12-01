@@ -168,18 +168,19 @@ func (r *ErrGAPI) Error() string {
 
 // GAPIError returns *ErrGAPI if the document is a GAPI error, nil otherwise
 func (d Document) GAPIError(uri string) *ErrGAPI {
-	if _, hasErr := d["error_id"]; hasErr {
-		errID, _ := d["error_id"].(string)
-		msg, _ := d["message"].(string)
-		status, _ := d["http_status_code"].(int)
-		return &ErrGAPI{
-			ErrorID:        errID,
-			HTTPStatusCode: status,
-			Message:        msg,
-			URI:            uri,
-		}
+	_, hasError := d["error_id"]
+	if !hasError {
+		return nil
 	}
-	return nil
+	errID, _ := d["error_id"].(string)
+	msg, _ := d["message"].(string)
+	status, _ := d["http_status_code"].(int)
+	return &ErrGAPI{
+		ErrorID:        errID,
+		HTTPStatusCode: status,
+		Message:        msg,
+		URI:            uri,
+	}
 }
 
 // GetPath recursively searches for value at provided path
