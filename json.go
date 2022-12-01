@@ -101,16 +101,17 @@ func (d Document) WriteOutJSON(w io.Writer) error {
 	return jsonMarshalDocument(bufio.NewWriter(w), d, true)
 }
 
+// jsonMarshalDocument marshal's the Document to JSON. Supported values:
+//
+// Go Type       | JSON value
+// ==============|==============
+// bool          | JSON booleans
+// float64       | JSON numbers
+// string        | JSON strings
+// []interface{} | JSON arrays
+// Document      | JSON objects
+// nil           | JSON null
 func jsonMarshalDocument(w *bufio.Writer, doc Document, flush bool) error {
-	// Supported values
-	//
-	// bool                    for JSON booleans
-	// float64                 for JSON numbers
-	// string                  for JSON strings
-	// []interface{}           for JSON arrays
-	// map[string]interface{}  for JSON objects
-	// nil                     for JSON null
-
 	// optionally flush the writer
 	if flush {
 		defer w.Flush()
@@ -135,7 +136,10 @@ func jsonMarshalDocument(w *bufio.Writer, doc Document, flush bool) error {
 		if err != nil {
 			return err
 		}
-		w.WriteRune(':')
+		_, err = w.WriteRune(':')
+		if err != nil {
+			return err
+		}
 		// write the value
 		val := doc[key]
 		switch val := val.(type) {
@@ -229,11 +233,17 @@ func jsonMarshalBool(w *bufio.Writer, b bool) error {
 }
 
 func jsonMarshalList(w *bufio.Writer, list []interface{}) error {
-	var err error
-	w.WriteRune('[')
+	_, err := w.WriteRune('[')
+	if err != nil {
+		return err
+	}
+
 	for idx, val := range list {
 		if idx > 0 {
-			w.WriteRune(',')
+			_, err = w.WriteRune(',')
+			if err != nil {
+				return err
+			}
 		}
 		switch val := val.(type) {
 		case string:
@@ -251,18 +261,20 @@ func jsonMarshalList(w *bufio.Writer, list []interface{}) error {
 		default:
 			return fmt.Errorf(
 				"item at index %d has unexpected type %T for value %v",
-				idx, val, val)
+				idx, val, val,
+			)
 		}
-
+		// return any marshal errors
 		if err != nil {
 			return err
 		}
 	}
-	w.WriteRune(']')
-	return nil
+	// close out the list
+	_, err = w.WriteRune(']')
+	return err
 }
 
 func jsonMarshalNil(w *bufio.Writer) error {
-	w.WriteString("null")
-	return nil
+	_, err := w.WriteString("null")
+	return err
 }
