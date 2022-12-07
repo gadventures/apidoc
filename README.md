@@ -4,7 +4,7 @@
 
 **WARNING:** alpha quality code; use at your own risk.
 
-Generic <rest.gadventures.com> G API `Document` datatype
+Generic <https://rest.gadventures.com> G API `Document` datatype
 
 It extracts the common code for dealing with resource (JSON) "documents" from
 the G API.
@@ -25,7 +25,13 @@ modifications to the `gadventures/apidoc` module.
 
 ## Usage
 
-specify `require github.com/gadventures/apidoc v0.2.0` in your `go.mod` file
+specify the following in your `go.mod` file
+
+```
+require github.com/gadventures/apidoc v0.2.0
+```
+
+### Example
 
 ```go
 package main
@@ -63,3 +69,8 @@ func main() {
 	fmt.Println(countryID.(string)) // will print "ZW"
 }
 ```
+
+#### NOTE
+
+This library can be combined with [gadventures/httpclient](https://github.com/gadventures/httpclient) to build a rudimentary REST Client in Go for the G API.
+
