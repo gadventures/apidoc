@@ -4,42 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 )
 
-func loadTestData(filename string) (string, error) {
-	file, err := os.Open(fmt.Sprintf("./testdata/%s", filename))
-	if err != nil {
-		return "", fmt.Errorf("failed to load file %s - %s", filename, err.Error())
-	}
-	defer file.Close()
-	blob, err := io.ReadAll(file)
-	if err != nil {
-		return "", fmt.Errorf("failed to read file %s - %s", filename, err.Error())
-	}
-	return string(blob), nil
-}
+func loadTestData(t *testing.T, filename string) []byte {
+	t.Helper()
 
-// hold the data in memory
-var departureBlob, errorBlob string
-
-func setup() {
-	var err error
-	departureBlob, err = loadTestData("departure.json")
+	data, err := os.ReadFile(fmt.Sprintf("testdata/%s", filename))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	errorBlob, err = loadTestData("gapi_error.json")
-	if err != nil {
-		panic(err)
-	}
-}
 
-func TestMain(m *testing.M) {
-	setup()
-	os.Exit(m.Run())
+	return data
 }
 
 func TestDepartureBlob(t *testing.T) {
@@ -47,7 +24,7 @@ func TestDepartureBlob(t *testing.T) {
 		doc, doc2 Document
 		out       bytes.Buffer
 	)
-	buf := bytes.NewBufferString(departureBlob)
+	buf := bytes.NewBuffer(loadTestData(t, "departure.json"))
 	err := json.NewDecoder(buf).Decode(&doc)
 	if err != nil {
 		t.Error(err)
@@ -90,9 +67,12 @@ func TestDepartureBlob(t *testing.T) {
 	}
 }
 
-func TestDepartureAdditional(t *testing.T) {
+func TestDepartureCopy(t *testing.T) {
+	departureBlob := loadTestData(t, "departure.json")
+
 	var doc, doc2 Document
-	err := json.NewDecoder(bytes.NewBufferString(departureBlob)).Decode(&doc)
+
+	err := json.NewDecoder(bytes.NewBuffer(departureBlob)).Decode(&doc)
 	if err != nil {
 		t.Error(err)
 	}
@@ -100,28 +80,22 @@ func TestDepartureAdditional(t *testing.T) {
 	if !doc.Equal(doc2) {
 		t.Errorf("The two documents must equal")
 	}
+}
 
-	// nil error
-	gErr := doc2.GAPIError(doc2["href"].(string))
-	if gErr != nil {
-		t.Errorf("document should not be a GAPIError")
-	}
+func TestDepartureToGAPIErrorNil(t *testing.T) {
+	departureBlob := loadTestData(t, "departure.json")
 
-	// real error
-	err = json.NewDecoder(bytes.NewBufferString(errorBlob)).Decode(&doc2)
+	var doc Document
+	err := json.NewDecoder(bytes.NewBuffer(departureBlob)).Decode(&doc)
 	if err != nil {
 		t.Error(err)
 	}
 
-	// FIXME(ammaar): This test doesn't make sense so commenting it out for now
-	// blobsBadHref := doc["href"].(string) + "9"
-	// gErr = doc2.GAPIError(blobsBadHref)
-	// if gErr == nil {
-	// 	t.Errorf("document should be a GAPIError")
-	// }
-	// if !strings.Contains(gErr.Error(), "404") {
-	// 	t.Errorf("Expected 404 but got %s", gErr.Error())
-	// }
+	// expecting a nil GAPIError from a valid Document
+	nilGAPIErr := doc.GAPIError(doc["href"].(string))
+	if nilGAPIErr != nil {
+		t.Errorf("valid Document should not return a GAPIError")
+	}
 }
 
 func getAttributeCounts(count *int) TraverseFunc {
